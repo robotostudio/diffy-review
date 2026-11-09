@@ -1,0 +1,58 @@
+name: Diffy review
+description: Send this repository's pull request events to Diffy, Roboto's code review, signed by GitHub's OIDC token.
+author: Roboto Studio
+branding:
+  icon: eye
+  color: purple
+
+runs:
+  using: composite
+  steps:
+    - name: Send the event to Diffy
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        DELIVERY: action-${{ github.run_id }}-${{ github.run_attempt }}
+        DIFFY_URL: https://eve-review.vercel.app/eve/v1/github
+        AUDIENCE: https://eve-review.vercel.app
+      run: |
+        set -euo pipefail
+
+        # Only events that run the default branch's copy of the workflow. Diffy refuses the rest.
+        case "$EVENT" in
+          pull_request_target) header=pull_request ;;
+          issue_comment)
+            header=issue_comment
+            # A plain comment, or one on an issue, is not ours to read. Any case, as the job's `if:` matches.
+            if ! jq -e '(.issue.pull_request != null) and ((.comment.body // "") | ascii_downcase | contains("@roboto-pr"))' "$GITHUB_EVENT_PATH" >/dev/null; then
+              echo "Not a pull request comment that names @roboto-pr: nothing to send."
+              exit 0
+            fi
+            ;;
+          *)
+            echo "::error::diffy-review runs on pull_request_target and issue_comment, not $EVENT."
+            exit 1
+            ;;
+        esac
+
+        if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+          echo "::error::No OIDC token. Add 'permissions: id-token: write' to the workflow."
+          exit 1
+        fi
+        audience=$(jq -rn --arg a "$AUDIENCE" '$a | @uri')
+        token=$(curl -sS --fail --max-time 15 \
+          -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$audience" | jq -r .value)
+        echo "::add-mask::$token"
+
+        status=$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' -X POST "$DIFFY_URL" \
+          -H "Authorization: Bearer $token" \
+          -H "Content-Type: application/json" \
+          -H "X-GitHub-Event: $header" \
+          -H "X-GitHub-Delivery: $DELIVERY" \
+          --data-binary "@$GITHUB_EVENT_PATH")
+        echo "Diffy answered $status for $header ($DELIVERY)."
+        if [ "$status" -ge 300 ]; then
+          echo "::error::Diffy refused the event ($status)."
+          exit 1
+        fi
