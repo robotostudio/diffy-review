@@ -6,8 +6,8 @@ repository rather than Admin.
 
 ## Use it
 
-1. Ask Roboto to bind the repository for the Action. Until then, Diffy accepts the events and reviews
-   nothing.
+1. Ask Roboto to bind the repository for the Action. Until then, Diffy refuses the events and the
+   run fails.
 2. Commit this file on the repository's default branch, as `.github/workflows/diffy-review.yml`:
 
 ```yaml
@@ -47,8 +47,8 @@ workflow gives it. It needs `bash`, `curl` and `jq`, which GitHub's hosted runne
 
 `pull_request_target` and `issue_comment` run the default branch's copy of the workflow. A
 `pull_request` run uses the pull request's own copy, which its author can change, so Diffy refuses
-it. Pull requests from forks are covered for the same reason. The action never runs the pull
-request's code.
+it. For the same reason, a pull request from a fork reaches Diffy safely; whether it is reviewed is
+your Diffy settings' call (off by default). The action never runs the pull request's code.
 
 ## What it does not cover
 
@@ -56,5 +56,5 @@ request's code.
 - Preview deployments. Diffy does not see them, so a review never opens one.
 - A repository or organisation with GitHub Actions turned off.
 
-Each run costs a few seconds of your GitHub Actions time. The `if:` in the file keeps a plain comment
-from starting a run.
+Each run costs a few seconds of your GitHub Actions time. A plain comment still shows a run in the
+Actions tab, but the `if:` in the file skips its job at once, so it costs nothing.
