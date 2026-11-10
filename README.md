@@ -32,9 +32,9 @@ jobs:
 When a pull request opens, gets new commits or is marked ready, or a comment on one names
 `@roboto-pr`, the action:
 
-1. asks GitHub for an OIDC token with the audience `https://eve-review.vercel.app`. GitHub signs it,
+1. asks GitHub for an OIDC token with the audience `https://pr.robotostudio.com`. GitHub signs it,
    and it names the repository, its owner and the event;
-2. posts the event GitHub gave the workflow to `https://eve-review.vercel.app/eve/v1/github`, with the
+2. posts the event GitHub gave the workflow to `https://pr.robotostudio.com/eve/v1/github`, with the
    token as a bearer.
 
 Diffy checks the token against GitHub's keys, and checks that the repository and the owner it names
