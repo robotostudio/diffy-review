@@ -13,8 +13,8 @@ runs:
       env:
         EVENT: ${{ github.event_name }}
         DELIVERY: action-${{ github.run_id }}-${{ github.run_attempt }}
-        DIFFY_URL: https://eve-review.vercel.app/eve/v1/github
-        AUDIENCE: https://eve-review.vercel.app
+        DIFFY_URL: https://pr.robotostudio.com/eve/v1/github
+        AUDIENCE: https://pr.robotostudio.com
       run: |
         set -euo pipefail
 
